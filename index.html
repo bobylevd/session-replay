@@ -24,13 +24,19 @@
     </header>
     <div id="empty">
       <p>Drop session <code>.jsonl</code> files or a folder of sessions anywhere.</p>
-      <p class="hint">Claude: <code>~/.claude/projects/&lt;project&gt;/</code> · Codex: <code>~/.codex/sessions/</code></p>
+      <p class="hint">In the folder picker, press <kbd>Cmd+Shift+G</kbd> and paste a path:</p>
+      <ul class="paths hint">
+        <li>Claude: <code>~/.claude/projects</code></li>
+        <li>Codex: <code>~/.codex/sessions</code></li>
+        <li>pi: <code>~/.pi/agent/sessions</code></li>
+      </ul>
     </div>
     <div id="log"></div>
   </section>
   <script src="vendor/fzstd.js"></script>
   <script src="md.js"></script>
   <script src="codex.js"></script>
+  <script src="pi.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

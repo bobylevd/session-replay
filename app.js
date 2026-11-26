@@ -46,6 +46,10 @@ const TOOL_ARG = {
   Skill: (i) => i.skill,
   ToolSearch: (i) => i.query,
   exec: (i) => i.input,
+  bash: (i) => i.command,
+  read: (i) => i.path,
+  write: (i) => i.path,
+  edit: (i) => i.path,
 };
 
 function toolArg(name, input) {
@@ -65,6 +69,13 @@ function toolInput(name, input) {
   if (name === "Write") return el("pre", "", input.content);
   if (name === "Bash") return el("pre", "", input.command);
   if (name === "exec") return el("pre", "", input.input);
+  if (name === "bash") return el("pre", "", input.command);
+  if (name === "write") return el("pre", "", input.content);
+  if (name === "edit") {
+    const wrap = el("div", "body");
+    for (const e of input.edits ?? [input]) wrap.append(diff(e.oldText, e.newText));
+    return wrap;
+  }
   return el("pre", "", JSON.stringify(input, null, 2));
 }
 
@@ -197,6 +208,7 @@ async function readText(file) {
 function parse(text) {
   const lines = text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
   if (lines[0].type === "session_meta") return { agent: "Codex", entries: fromCodex(lines) };
+  if (lines[0].type === "session") return { agent: "pi", entries: fromPi(lines) };
   return { agent: "Claude", entries: lines };
 }
 
