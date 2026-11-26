@@ -12,7 +12,7 @@ function el(tag, cls, text) {
 
 function markdown(text) {
   const node = el("div", "bubble in assistant");
-  node.innerHTML = DOMPurify.sanitize(marked.parse(text));
+  node.append(...renderMarkdown(text));
   return node;
 }
 
