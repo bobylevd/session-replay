@@ -9,7 +9,7 @@
 <body>
   <aside id="threads">
     <div id="threads-head">
-      <h1 id="title">Sessions</h1>
+      <h1>Sessions</h1>
       <label class="btn">Files<input id="file" type="file" accept=".jsonl,.zst" multiple hidden></label>
       <label class="btn">Folder<input id="folder" type="file" webkitdirectory hidden></label>
     </div>
@@ -32,6 +32,10 @@
       </ul>
     </div>
     <div id="log"></div>
+    <div id="loading" hidden>
+      <progress id="progress" value="0"></progress>
+      <span>Loading sessions</span>
+    </div>
   </section>
   <script src="vendor/fzstd.js"></script>
   <script src="md.js"></script>

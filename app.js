@@ -275,8 +275,10 @@ function showSessions() {
 
 async function loadFiles(files) {
   const sessionFiles = [...files].filter((f) => /\.jsonl(\.zst)?$/.test(f.name));
+  $("progress").max = sessionFiles.length;
+  $("loading").hidden = false;
   for (const [i, file] of sessionFiles.entries()) {
-    $("title").textContent = `Loading ${i + 1}/${sessionFiles.length}`;
+    $("progress").value = i;
     try {
       const text = await readText(file);
       if (!text.trim()) continue;
@@ -288,7 +290,7 @@ async function loadFiles(files) {
       console.error(`Skipped ${file.name}:`, err);
     }
   }
-  $("title").textContent = "Sessions";
+  $("loading").hidden = true;
   showSessions();
 }
 
