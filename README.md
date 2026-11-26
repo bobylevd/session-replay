@@ -1,6 +1,6 @@
 # Session Replay
 
-Static site. It replays a Claude Code session `.jsonl` as a chat log with thinking, tool calls, and tool results.
+Static site. It shows a Claude Code session `.jsonl` as a scrollable chat log with thinking, tool calls, and tool results.
 
 ## Run
 
@@ -8,4 +8,4 @@ Static site. It replays a Claude Code session `.jsonl` as a chat log with thinki
 2. Open `http://localhost:8765`.
 3. Drop a session file from `~/.claude/projects/<project>/<session>.jsonl`.
 
-Use Play, Step, Show all, speed, and the slider to move through the session. `sample.jsonl` is a small demo session.
+`sample.jsonl` is a small demo session.

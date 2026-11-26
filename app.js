@@ -2,13 +2,6 @@ const $ = (id) => document.getElementById(id);
 const log = $("log");
 const drop = $("drop");
 
-const MAX_GAP_MS = 2500;
-const MIN_GAP_MS = 120;
-
-let events = [];
-let shown = 0;
-let timer = null;
-
 function el(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -98,18 +91,12 @@ function userText(text, isMeta) {
 
 function render(lines) {
   log.replaceChildren();
-  events = [];
   const tools = new Map();
   let title = "";
   let model = "";
   let tokensOut = 0;
   let first = null;
   let last = null;
-
-  const push = (node, ts, parent = log) => {
-    parent.append(node);
-    events.push({ node, ts: Date.parse(ts) });
-  };
 
   for (const e of lines) {
     if (e.type === "ai-title") title = e.aiTitle ?? e.title ?? title;
@@ -119,25 +106,25 @@ function render(lines) {
       first ??= e;
       last = e;
       const c = e.message.content;
-      if (typeof c === "string") push(userText(c, e.isMeta), e.timestamp);
+      if (typeof c === "string") log.append(userText(c, e.isMeta));
       else for (const b of c) {
         if (b.type === "tool_result") {
           const card = tools.get(b.tool_use_id);
           card.classList.toggle("error", !!b.is_error);
           card.querySelector(".status").textContent = b.is_error ? "error" : "done";
-          push(toolResult(b), e.timestamp, card.querySelector(".body"));
-        } else if (b.type === "text") push(userText(b.text, e.isMeta), e.timestamp);
+          card.querySelector(".body").append(toolResult(b));
+        } else if (b.type === "text") log.append(userText(b.text, e.isMeta));
       }
     } else if (e.type === "assistant") {
       last = e;
       model = e.message.model;
       tokensOut += e.message.usage?.output_tokens ?? 0;
       for (const b of e.message.content) {
-        if (b.type === "text") push(markdown(b.text), e.timestamp);
+        if (b.type === "text") log.append(markdown(b.text));
         else if (b.type === "thinking") {
           const d = details("thinking", [el("span", "", "Thinking")]);
           d.querySelector(".body").textContent = b.thinking;
-          push(d, e.timestamp);
+          log.append(d);
         } else if (b.type === "tool_use") {
           const d = details("tool", [
             el("span", "name", b.name),
@@ -147,11 +134,11 @@ function render(lines) {
           d.querySelector(".body").append(section("Input", el("div", "input")));
           d.querySelector(".input").append(toolInput(b.name, b.input));
           tools.set(b.id, d);
-          push(d, e.timestamp);
+          log.append(d);
         }
       }
     } else if (e.type === "system" && e.subtype === "compact_boundary") {
-      push(el("div", "system", "context compacted"), e.timestamp);
+      log.append(el("div", "system", "context compacted"));
     }
   }
 
@@ -159,55 +146,14 @@ function render(lines) {
   $("info").textContent = [title, first?.cwd, model, `${span} min`, `${tokensOut.toLocaleString()} out tokens`]
     .filter(Boolean).join(" · ");
   $("picker").hidden = true;
-  $("controls").hidden = false;
-  $("scrub").max = events.length;
-  seek(0);
-}
-
-function seek(n) {
-  shown = n;
-  events.forEach((ev, i) => { ev.node.hidden = i >= n; });
-  $("scrub").value = n;
-  $("pos").textContent = `${n} / ${events.length}`;
-}
-
-function step() {
-  if (shown >= events.length) return pause();
-  seek(shown + 1);
-  events[shown - 1].node.scrollIntoView({ block: "end", behavior: "smooth" });
-}
-
-function tick() {
-  step();
-  if (shown >= events.length) return;
-  const gap = events[shown].ts - events[shown - 1].ts;
-  const speed = Number($("speed").value);
-  timer = setTimeout(tick, Math.max(MIN_GAP_MS, Math.min(gap, MAX_GAP_MS)) / speed);
-}
-
-function play() {
-  if (shown >= events.length) seek(0);
-  $("play").textContent = "Pause";
-  tick();
-}
-
-function pause() {
-  clearTimeout(timer);
-  timer = null;
-  $("play").textContent = "Play";
 }
 
 async function load(file) {
-  pause();
   const text = await file.text();
   const lines = text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
   render(lines);
 }
 
-$("play").onclick = () => (timer ? pause() : play());
-$("step").onclick = () => { pause(); step(); };
-$("all").onclick = () => { pause(); seek(events.length); };
-$("scrub").oninput = (e) => { pause(); seek(Number(e.target.value)); };
 $("file").onchange = (e) => load(e.target.files[0]);
 
 drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
