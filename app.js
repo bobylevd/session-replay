@@ -246,7 +246,11 @@ function listDate(t) {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "2-digit" });
 }
 
+const sessions = new Map();
+let active = null;
+
 async function openSession(session, item) {
+  active = session.file.name;
   for (const n of list.children) n.classList.toggle("active", n === item);
   render(parse(await readText(session.file)).entries);
   $("name").textContent = session.title;
@@ -255,30 +259,29 @@ async function openSession(session, item) {
   document.body.classList.add("chatting");
 }
 
-function showSessions(sessions) {
+function showSessions() {
   list.replaceChildren();
-  for (const session of sessions) {
+  for (const session of [...sessions.values()].sort((a, b) => b.last - a.last)) {
     const item = el("li", "thread");
     const top = el("div", "thread-top");
     top.append(el("span", "thread-title", session.title), el("span", "thread-date", listDate(session.last)));
     item.append(el("div", "thread-avatar " + session.agent), top, el("div", "thread-preview", session.preview));
+    item.classList.toggle("active", session.file.name === active);
     item.onclick = () => openSession(session, item);
     list.append(item);
   }
-  list.firstElementChild?.click();
+  if (!active) list.firstElementChild?.click();
 }
 
 async function loadFiles(files) {
-  const sessions = [];
   for (const file of files) {
     if (!/\.jsonl(\.zst)?$/.test(file.name)) continue;
     const { agent, entries } = parse(await readText(file));
     if (entries.some((e) => e.isSidechain)) continue;
     const meta = summarize(entries);
-    if (meta.last) sessions.push({ file, agent, ...meta });
+    if (meta.last) sessions.set(file.name, { file, agent, ...meta });
   }
-  sessions.sort((a, b) => b.last - a.last);
-  showSessions(sessions);
+  showSessions();
 }
 
 async function entryFiles(entry) {
