@@ -274,13 +274,21 @@ function showSessions() {
 }
 
 async function loadFiles(files) {
-  for (const file of files) {
-    if (!/\.jsonl(\.zst)?$/.test(file.name)) continue;
-    const { agent, entries } = parse(await readText(file));
-    if (entries.some((e) => e.isSidechain)) continue;
-    const meta = summarize(entries);
-    if (meta.last) sessions.set(file.name, { file, agent, ...meta });
+  const sessionFiles = [...files].filter((f) => /\.jsonl(\.zst)?$/.test(f.name));
+  for (const [i, file] of sessionFiles.entries()) {
+    $("title").textContent = `Loading ${i + 1}/${sessionFiles.length}`;
+    try {
+      const text = await readText(file);
+      if (!text.trim()) continue;
+      const { agent, entries } = parse(text);
+      if (entries.some((e) => e.isSidechain)) continue;
+      const meta = summarize(entries);
+      if (meta.last) sessions.set(file.name, { file, agent, ...meta });
+    } catch (err) {
+      console.error(`Skipped ${file.name}:`, err);
+    }
   }
+  $("title").textContent = "Sessions";
   showSessions();
 }
 
