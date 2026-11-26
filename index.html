@@ -7,19 +7,27 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header id="bar">
-    <div id="avatar">C</div>
-    <div id="name">Claude</div>
-    <div id="info">Drop a Claude Code session .jsonl</div>
-  </header>
-  <main id="drop">
-    <label id="picker">
-      <p>Drop a <code>.jsonl</code> file here or click to pick one.</p>
-      <p class="hint">Sessions live in <code>~/.claude/projects/&lt;project&gt;/&lt;session&gt;.jsonl</code></p>
-      <input id="file" type="file" accept=".jsonl,.json,.txt" hidden>
-    </label>
+  <aside id="threads">
+    <div id="threads-head">
+      <h1>Sessions</h1>
+      <label class="btn">Files<input id="file" type="file" accept=".jsonl" multiple hidden></label>
+      <label class="btn">Folder<input id="folder" type="file" webkitdirectory hidden></label>
+    </div>
+    <ul id="list"></ul>
+  </aside>
+  <section id="chat">
+    <header id="bar">
+      <button id="back" aria-label="Back">‹</button>
+      <div id="avatar">C</div>
+      <div id="name">Claude</div>
+      <div id="info"></div>
+    </header>
+    <div id="empty">
+      <p>Drop session <code>.jsonl</code> files or a folder of sessions anywhere.</p>
+      <p class="hint">Sessions live in <code>~/.claude/projects/&lt;project&gt;/</code></p>
+    </div>
     <div id="log"></div>
-  </main>
+  </section>
   <script src="md.js"></script>
   <script src="app.js"></script>
 </body>

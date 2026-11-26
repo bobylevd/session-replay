@@ -47,7 +47,7 @@ function isBlockStart(line, next) {
     || (line.includes("|") && TABLE_SEP.test(next ?? ""));
 }
 
-function list(lines, i) {
+function listBlock(lines, i) {
   const base = ITEM.exec(lines[i]);
   const ordered = /\d/.test(base[2]);
   const el = node(ordered ? "ol" : "ul");
@@ -64,7 +64,7 @@ function list(lines, i) {
     const li = node("li", inline(body.join(" ")));
     const nested = ITEM.exec(lines[i] ?? "");
     if (nested && nested[1].length > base[1].length) {
-      const [sub, next] = list(lines, i);
+      const [sub, next] = listBlock(lines, i);
       li.append(sub);
       i = next;
     }
@@ -95,7 +95,7 @@ function blocks(lines) {
       out.push(node("hr"));
       i++;
     } else if (ITEM.test(line)) {
-      const [el, next] = list(lines, i);
+      const [el, next] = listBlock(lines, i);
       out.push(el);
       i = next;
     } else if (QUOTE.test(line)) {

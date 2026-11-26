@@ -12,6 +12,8 @@
   --claude: #d97757;
   --err: #ff3b30;
   --add: #248a3d;
+  --side: #f6f6f6;
+  --active: #0b84ff;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -24,11 +26,15 @@
     --border: rgba(255, 255, 255, 0.14);
     --err: #ff453a;
     --add: #30d158;
+    --side: #1c1c1e;
   }
 }
 * { box-sizing: border-box; }
 body {
   margin: 0;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 320px 1fr;
   background: var(--bg);
   color: var(--fg);
   font: 16px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
@@ -37,6 +43,49 @@ body {
 code, pre { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
 pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
 [hidden] { display: none !important; }
+
+#threads {
+  background: var(--side);
+  border-right: 0.5px solid var(--border);
+  overflow-y: auto;
+  min-width: 0;
+}
+#threads-head {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center; gap: 6px;
+  padding: 14px 12px 10px;
+  background: var(--side);
+}
+#threads-head h1 { font-size: 20px; margin: 0 auto 0 4px; }
+.btn {
+  font-size: 13px; color: var(--out); cursor: pointer;
+  padding: 4px 10px; border-radius: 12px; background: var(--code);
+}
+#list { list-style: none; margin: 0; padding: 0 8px 12px; }
+.thread {
+  display: grid; grid-template-columns: 40px 1fr; column-gap: 10px;
+  padding: 9px 10px; border-radius: 10px; cursor: pointer;
+}
+.thread-avatar {
+  grid-row: span 2; width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(180deg, #e8987a, var(--claude));
+  color: #fff; font-weight: 600;
+}
+.thread-top { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+.thread-title { font-weight: 600; font-size: 14px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thread-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.thread-preview {
+  font-size: 13px; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.thread.active { background: var(--active); }
+.thread.active .thread-title, .thread.active .thread-date, .thread.active .thread-preview { color: #fff; }
+
+#chat { overflow-y: auto; min-width: 0; }
+#back { display: none; }
+body.over #chat { outline: 2px dashed var(--out); outline-offset: -8px; }
+#empty { margin: 20vh auto 0; max-width: 420px; padding: 0 16px; text-align: center; color: var(--muted); }
 
 #bar {
   position: sticky; top: 0; z-index: 1;
@@ -57,13 +106,6 @@ pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
 #name { font-size: 12px; }
 #info { color: var(--muted); font-size: 11px; max-width: 100%; overflow-wrap: anywhere; }
 
-#drop { min-height: calc(100vh - 90px); }
-#drop.over { outline: 2px dashed var(--out); outline-offset: -8px; }
-#picker {
-  display: block; max-width: 520px; margin: 15vh auto 0; padding: 40px 24px;
-  text-align: center; cursor: pointer; color: var(--muted);
-  border: 2px dashed var(--border); border-radius: 18px;
-}
 
 #log {
   max-width: 760px; margin: 0 auto; padding: 12px 16px 30vh;
@@ -125,7 +167,21 @@ details[open] > summary::after { transform: rotate(90deg); }
 .thinking > summary { color: var(--muted); font-style: italic; font-size: 14px; }
 .thinking .body { color: var(--muted); white-space: pre-wrap; font-size: 14px; }
 
-.meta-msg { align-self: center; max-width: 90%; margin: 6px 0; color: var(--muted); font-size: 11px; }
+.meta-msg { align-self: stretch; text-align: center; margin: 6px 0; color: var(--muted); font-size: 11px; }
 .meta-msg > summary { justify-content: center; }
+.meta-msg > summary::after { margin-left: 0; }
+.meta-msg .body { text-align: left; }
 .meta-msg .body pre { color: var(--fg); }
 .system { align-self: center; margin: 10px 0; color: var(--muted); font-size: 11px; }
+
+@media (max-width: 700px) {
+  body { grid-template-columns: 1fr; }
+  #chat { display: none; }
+  body.chatting #threads { display: none; }
+  body.chatting #chat { display: block; }
+  #back {
+    display: block; position: absolute; left: 8px; top: 14px;
+    font-size: 30px; line-height: 1; color: var(--out);
+    background: none; border: 0; cursor: pointer;
+  }
+}

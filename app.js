@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const log = $("log");
-const drop = $("drop");
+const list = $("list");
+const chat = $("chat");
 const STAMP_GAP_MS = 10 * 60 * 1000;
 
 function el(tag, cls, text) {
@@ -138,21 +139,20 @@ function render(lines) {
   };
 
   for (const e of lines) {
-    if (e.type === "ai-title") title = e.aiTitle ?? e.title ?? title;
-    if (e.type === "summary") title = e.summary;
+    if (e.type === "ai-title") title = e.aiTitle;
     if (!e.timestamp) continue;
     if (e.type === "user") {
       first ??= e;
       last = e;
       const c = e.message.content;
-      if (typeof c === "string") add(userText(c, e.origin?.kind === "human" && !e.isMeta), e.timestamp);
+      if (typeof c === "string") add(userText(c, isHuman(e)), e.timestamp);
       else for (const b of c) {
         if (b.type === "tool_result") {
           const card = tools.get(b.tool_use_id);
           card.classList.toggle("error", !!b.is_error);
           card.querySelector(".status").textContent = b.is_error ? "error" : "done";
           card.querySelector(".body").append(toolResult(b));
-        } else if (b.type === "text") add(userText(b.text, e.origin?.kind === "human" && !e.isMeta), e.timestamp);
+        } else if (b.type === "text") add(userText(b.text, isHuman(e)), e.timestamp);
       }
     } else if (e.type === "assistant") {
       last = e;
@@ -180,23 +180,108 @@ function render(lines) {
 
   markTails();
   const span = last ? Math.round((Date.parse(last.timestamp) - Date.parse(first.timestamp)) / 60000) : 0;
-  $("info").textContent = [title, first?.cwd, model, `${span} min`, `${tokensOut.toLocaleString()} out tokens`]
+  $("name").textContent = title || "Claude";
+  $("info").textContent = [first?.cwd, model, `${span} min`, `${tokensOut.toLocaleString()} out tokens`]
     .filter(Boolean).join(" · ");
-  $("picker").hidden = true;
+  $("empty").hidden = true;
 }
 
-async function load(file) {
-  const text = await file.text();
-  const lines = text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
-  render(lines);
+function parse(text) {
+  return text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
 }
 
-$("file").onchange = (e) => load(e.target.files[0]);
+function isHuman(e) {
+  return e.origin?.kind === "human" && !e.isMeta;
+}
 
-drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
-drop.ondragleave = () => drop.classList.remove("over");
-drop.ondrop = (e) => {
+function firstText(content) {
+  if (typeof content === "string") return content;
+  return content.find((b) => b.type === "text")?.text;
+}
+
+function summarize(lines) {
+  let title = "";
+  let prompt = "";
+  let preview = "";
+  let last = 0;
+  for (const e of lines) {
+    if (e.type === "ai-title") title = e.aiTitle;
+    if (!e.timestamp) continue;
+    const text = e.type === "assistant" || (e.type === "user" && isHuman(e)) ? firstText(e.message.content) : null;
+    if (!text) continue;
+    if (e.type === "user") prompt ||= text;
+    preview = text;
+    last = Date.parse(e.timestamp);
+  }
+  return { title: title || prompt.slice(0, 80), preview: preview.replace(/[*_`#>]/g, "").replace(/\s+/g, " ").slice(0, 140), last };
+}
+
+function listDate(t) {
+  const d = new Date(t);
+  if (d.toDateString() === new Date().toDateString()) {
+    return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  }
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "2-digit" });
+}
+
+async function openSession(session, item) {
+  for (const n of list.children) n.classList.toggle("active", n === item);
+  render(parse(await session.file.text()));
+  chat.scrollTop = 0;
+  document.body.classList.add("chatting");
+}
+
+function showSessions(sessions) {
+  list.replaceChildren();
+  for (const session of sessions) {
+    const item = el("li", "thread");
+    const top = el("div", "thread-top");
+    top.append(el("span", "thread-title", session.title), el("span", "thread-date", listDate(session.last)));
+    item.append(el("div", "thread-avatar", "C"), top, el("div", "thread-preview", session.preview));
+    item.onclick = () => openSession(session, item);
+    list.append(item);
+  }
+  list.firstElementChild?.click();
+}
+
+async function loadFiles(files) {
+  const sessions = [];
+  for (const file of files) {
+    const path = file.webkitRelativePath || file.name;
+    if (!path.endsWith(".jsonl") || path.includes("/subagents/")) continue;
+    const meta = summarize(parse(await file.text()));
+    if (meta.last) sessions.push({ file, ...meta });
+  }
+  sessions.sort((a, b) => b.last - a.last);
+  showSessions(sessions);
+}
+
+async function entryFiles(entry) {
+  if (entry.isFile) {
+    const file = await new Promise((ok, fail) => entry.file(ok, fail));
+    Object.defineProperty(file, "webkitRelativePath", { value: entry.fullPath.slice(1) });
+    return [file];
+  }
+  const reader = entry.createReader();
+  const out = [];
+  for (;;) {
+    const batch = await new Promise((ok, fail) => reader.readEntries(ok, fail));
+    if (!batch.length) return out;
+    for (const child of batch) out.push(...await entryFiles(child));
+  }
+}
+
+$("file").onchange = (e) => loadFiles(e.target.files);
+$("folder").onchange = (e) => loadFiles(e.target.files);
+$("back").onclick = () => document.body.classList.remove("chatting");
+
+document.ondragover = (e) => { e.preventDefault(); document.body.classList.add("over"); };
+document.ondragleave = (e) => { if (!e.relatedTarget) document.body.classList.remove("over"); };
+document.ondrop = async (e) => {
   e.preventDefault();
-  drop.classList.remove("over");
-  load(e.dataTransfer.files[0]);
+  document.body.classList.remove("over");
+  const entries = [...e.dataTransfer.items].map((i) => i.webkitGetAsEntry());
+  const files = [];
+  for (const entry of entries) files.push(...await entryFiles(entry));
+  loadFiles(files);
 };
