@@ -101,6 +101,12 @@ body.over #chat { outline: 2px dashed var(--out); outline-offset: -8px; }
   width: 44px; height: 44px; border-radius: 50%;
   background: var(--avatar) url("claude.svg") center / 72% no-repeat;
 }
+#avatar.Codex, .thread-avatar.Codex {
+  display: grid; place-items: center;
+  background: var(--fg); color: var(--bg);
+  font: 600 15px ui-monospace, Menlo, monospace;
+}
+#avatar.Codex::after, .thread-avatar.Codex::after { content: ">_"; }
 #name { font-size: 12px; }
 #info { color: var(--muted); font-size: 11px; max-width: 100%; overflow-wrap: anywhere; }
 

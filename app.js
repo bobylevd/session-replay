@@ -45,6 +45,7 @@ const TOOL_ARG = {
   WebFetch: (i) => i.url,
   Skill: (i) => i.skill,
   ToolSearch: (i) => i.query,
+  exec: (i) => i.input,
 };
 
 function toolArg(name, input) {
@@ -63,6 +64,7 @@ function toolInput(name, input) {
   if (name === "Edit") return diff(input.old_string, input.new_string);
   if (name === "Write") return el("pre", "", input.content);
   if (name === "Bash") return el("pre", "", input.command);
+  if (name === "exec") return el("pre", "", input.input);
   return el("pre", "", JSON.stringify(input, null, 2));
 }
 
@@ -124,9 +126,9 @@ function markTails() {
 function render(lines) {
   log.replaceChildren();
   const tools = new Map();
-  let title = "";
   let model = "";
   let tokensOut = 0;
+  const counted = new Set();
   let first = null;
   let last = null;
   let prevTs = 0;
@@ -139,7 +141,6 @@ function render(lines) {
   };
 
   for (const e of lines) {
-    if (e.type === "ai-title") title = e.aiTitle;
     if (!e.timestamp) continue;
     if (e.type === "user") {
       first ??= e;
@@ -157,7 +158,8 @@ function render(lines) {
     } else if (e.type === "assistant") {
       last = e;
       model = e.message.model;
-      tokensOut += e.message.usage?.output_tokens ?? 0;
+      if (!counted.has(e.message.id)) tokensOut += e.message.usage?.output_tokens ?? 0;
+      counted.add(e.message.id);
       for (const b of e.message.content) {
         if (b.type === "text") add(markdown(b.text), e.timestamp);
         else if (b.type === "thinking" && b.thinking) add(thinking(b.thinking), e.timestamp);
@@ -180,14 +182,15 @@ function render(lines) {
 
   markTails();
   const span = last ? Math.round((Date.parse(last.timestamp) - Date.parse(first.timestamp)) / 60000) : 0;
-  $("name").textContent = title || "Claude";
   $("info").textContent = [first?.cwd, model, `${span} min`, `${tokensOut.toLocaleString()} out tokens`]
     .filter(Boolean).join(" · ");
   $("empty").hidden = true;
 }
 
 function parse(text) {
-  return text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+  const lines = text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+  if (lines[0].type === "session_meta") return { agent: "Codex", entries: fromCodex(lines) };
+  return { agent: "Claude", entries: lines };
 }
 
 function isHuman(e) {
@@ -226,7 +229,9 @@ function listDate(t) {
 
 async function openSession(session, item) {
   for (const n of list.children) n.classList.toggle("active", n === item);
-  render(parse(await session.file.text()));
+  render(parse(await session.file.text()).entries);
+  $("name").textContent = session.title;
+  $("avatar").className = session.agent;
   chat.scrollTop = 0;
   document.body.classList.add("chatting");
 }
@@ -237,7 +242,7 @@ function showSessions(sessions) {
     const item = el("li", "thread");
     const top = el("div", "thread-top");
     top.append(el("span", "thread-title", session.title), el("span", "thread-date", listDate(session.last)));
-    item.append(el("div", "thread-avatar"), top, el("div", "thread-preview", session.preview));
+    item.append(el("div", "thread-avatar " + session.agent), top, el("div", "thread-preview", session.preview));
     item.onclick = () => openSession(session, item);
     list.append(item);
   }
@@ -247,10 +252,11 @@ function showSessions(sessions) {
 async function loadFiles(files) {
   const sessions = [];
   for (const file of files) {
-    const path = file.webkitRelativePath || file.name;
-    if (!path.endsWith(".jsonl") || path.includes("/subagents/")) continue;
-    const meta = summarize(parse(await file.text()));
-    if (meta.last) sessions.push({ file, ...meta });
+    if (!file.name.endsWith(".jsonl")) continue;
+    const { agent, entries } = parse(await file.text());
+    if (entries.some((e) => e.isSidechain)) continue;
+    const meta = summarize(entries);
+    if (meta.last) sessions.push({ file, agent, ...meta });
   }
   sessions.sort((a, b) => b.last - a.last);
   showSessions(sessions);
@@ -258,9 +264,7 @@ async function loadFiles(files) {
 
 async function entryFiles(entry) {
   if (entry.isFile) {
-    const file = await new Promise((ok, fail) => entry.file(ok, fail));
-    Object.defineProperty(file, "webkitRelativePath", { value: entry.fullPath.slice(1) });
-    return [file];
+    return [await new Promise((ok, fail) => entry.file(ok, fail))];
   }
   const reader = entry.createReader();
   const out = [];
