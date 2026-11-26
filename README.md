@@ -11,3 +11,5 @@ Static site. It shows Claude Code, Codex and pi session `.jsonl` and `.jsonl.zst
 `sample.jsonl` is a small demo session.
 
 `vendor/fzstd.js` is [fzstd](https://github.com/101arrowz/fzstd) 0.1.1 (MIT). It decompresses `.jsonl.zst` files in the browser.
+
+`logos/` holds the avatars. `pi.svg` is the pi badge from the pi.dev press kit. `codex.png` is the Codex app icon from the ChatGPT macOS app.
