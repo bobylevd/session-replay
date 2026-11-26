@@ -4,11 +4,6 @@ function codexText(content) {
   return content.filter((c) => c.text !== undefined).map((c) => c.text).join("\n");
 }
 
-function codexIsHuman(payload) {
-  const items = payload.internal_chat_message_metadata_passthrough?.content_item_metadata ?? [];
-  return items.length > 0 && items.every((m) => m.provenance?.type === "user");
-}
-
 function codexToolOutput(output) {
   if (typeof output === "string") return output;
   return output.map((c) => ({ type: "text", text: c.text ?? JSON.stringify(c) }));
@@ -20,6 +15,9 @@ function fromCodex(lines) {
   const entries = [];
   let model = "";
   let outputTotal = 0;
+  const typed = new Set(lines
+    .filter((l) => l.type === "event_msg" && l.payload.type === "item_completed" && l.payload.item.type === "UserMessage")
+    .map((l) => codexText(l.payload.item.content)));
 
   for (const [i, line] of lines.entries()) {
     const p = line.payload;
@@ -35,7 +33,10 @@ function fromCodex(lines) {
       outputTotal = total;
     } else if (line.type !== "response_item") continue;
     else if (p.type === "message" && p.role === "assistant") assistant([{ type: "text", text: codexText(p.content) }]);
-    else if (p.type === "message" && p.role === "user") user(codexText(p.content), codexIsHuman(p) ? "human" : "context");
+    else if (p.type === "message" && p.role === "user") {
+      const text = codexText(p.content);
+      user(text, typed.has(text) ? "human" : "context");
+    }
     else if (p.type === "message") user(codexText(p.content), p.role);
     else if (p.type === "agent_message") user(`Agent message ${p.author} → ${p.recipient}\n${codexText(p.content)}`, "agent");
     else if (p.type === "reasoning" && p.summary.length) {

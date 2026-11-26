@@ -1,6 +1,6 @@
 # Session Replay
 
-Static site. It shows Claude Code and Codex session `.jsonl` files as a scrollable chat log with thinking, tool calls, and tool results.
+Static site. It shows Claude Code and Codex session `.jsonl` and `.jsonl.zst` files as a scrollable chat log with thinking, tool calls, and tool results.
 
 ## Run
 
@@ -9,3 +9,5 @@ Static site. It shows Claude Code and Codex session `.jsonl` files as a scrollab
 3. Drop session `.jsonl` files or a folder such as `~/.claude/projects/<project>/` or `~/.codex/sessions/`. Each session shows as a thread in the sidebar.
 
 `sample.jsonl` is a small demo session.
+
+`vendor/fzstd.js` is [fzstd](https://github.com/101arrowz/fzstd) 0.1.1 (MIT). It decompresses `.jsonl.zst` files in the browser.

@@ -187,6 +187,13 @@ function render(lines) {
   $("empty").hidden = true;
 }
 
+async function readText(file) {
+  if (file.name.endsWith(".zst")) {
+    return new TextDecoder().decode(fzstd.decompress(new Uint8Array(await file.arrayBuffer())));
+  }
+  return file.text();
+}
+
 function parse(text) {
   const lines = text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
   if (lines[0].type === "session_meta") return { agent: "Codex", entries: fromCodex(lines) };
@@ -229,7 +236,7 @@ function listDate(t) {
 
 async function openSession(session, item) {
   for (const n of list.children) n.classList.toggle("active", n === item);
-  render(parse(await session.file.text()).entries);
+  render(parse(await readText(session.file)).entries);
   $("name").textContent = session.title;
   $("avatar").className = session.agent;
   chat.scrollTop = 0;
@@ -252,8 +259,8 @@ function showSessions(sessions) {
 async function loadFiles(files) {
   const sessions = [];
   for (const file of files) {
-    if (!file.name.endsWith(".jsonl")) continue;
-    const { agent, entries } = parse(await file.text());
+    if (!/\.jsonl(\.zst)?$/.test(file.name)) continue;
+    const { agent, entries } = parse(await readText(file));
     if (entries.some((e) => e.isSidechain)) continue;
     const meta = summarize(entries);
     if (meta.last) sessions.push({ file, agent, ...meta });
