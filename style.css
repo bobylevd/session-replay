@@ -82,6 +82,7 @@ details[open] > summary::before { content: "▾"; }
 .body { padding: 0 10px 10px; display: grid; gap: 8px; }
 
 .thinking > summary { color: var(--muted); font-style: italic; }
+.thought { color: var(--muted); font-style: italic; font-size: 13px; }
 .thinking .body { color: var(--muted); white-space: pre-wrap; }
 
 .tool > summary .name { color: var(--tool); font-weight: 600; white-space: nowrap; }

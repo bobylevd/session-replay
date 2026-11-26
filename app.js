@@ -78,6 +78,13 @@ function toolResult(block) {
   return section(block.is_error ? "Error" : "Result", wrap);
 }
 
+function thinking(text) {
+  if (!text) return el("div", "thought", "Thought (content redacted in transcript)");
+  const d = details("thinking", [el("span", "", "Thinking")]);
+  d.querySelector(".body").textContent = text;
+  return d;
+}
+
 function userText(text, isMeta) {
   if (isMeta) {
     const d = details("meta-msg", [el("span", "", "meta: " + text.split("\n")[0].slice(0, 100))]);
@@ -121,11 +128,7 @@ function render(lines) {
       tokensOut += e.message.usage?.output_tokens ?? 0;
       for (const b of e.message.content) {
         if (b.type === "text") log.append(markdown(b.text));
-        else if (b.type === "thinking") {
-          const d = details("thinking", [el("span", "", "Thinking")]);
-          d.querySelector(".body").textContent = b.thinking;
-          log.append(d);
-        } else if (b.type === "tool_use") {
+        else if (b.type === "thinking") log.append(thinking(b.thinking)); else if (b.type === "tool_use") {
           const d = details("tool", [
             el("span", "name", b.name),
             el("span", "arg", toolArg(b.name, b.input)),
