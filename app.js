@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const log = $("log");
 const drop = $("drop");
+const STAMP_GAP_MS = 10 * 60 * 1000;
 
 function el(tag, cls, text) {
   const node = document.createElement(tag);
@@ -10,7 +11,7 @@ function el(tag, cls, text) {
 }
 
 function markdown(text) {
-  const node = el("div", "assistant");
+  const node = el("div", "bubble in assistant");
   node.innerHTML = DOMPurify.sanitize(marked.parse(text));
   return node;
 }
@@ -79,8 +80,13 @@ function toolResult(block) {
 }
 
 function thinking(text) {
-  if (!text) return el("div", "thought", "Thought (content redacted in transcript)");
-  const d = details("thinking", [el("span", "", "Thinking")]);
+  if (!text) {
+    const dots = el("div", "bubble in typing");
+    dots.title = "Thinking (content redacted in transcript)";
+    dots.append(el("span"), el("span"), el("span"));
+    return dots;
+  }
+  const d = details("bubble in thinking", [el("span", "", "Thinking")]);
   d.querySelector(".body").textContent = text;
   return d;
 }
@@ -91,9 +97,27 @@ function userText(text, isMeta) {
     d.querySelector(".body").append(el("pre", "", text));
     return d;
   }
-  const node = el("div", "user");
+  const node = el("div", "bubble out");
   node.append(el("pre", "", text));
   return node;
+}
+
+function stamp(t) {
+  const d = new Date(t);
+  const day = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return el("div", "stamp", `${day} ${time}`);
+}
+
+function side(node) {
+  if (!node?.classList.contains("bubble")) return null;
+  return node.classList.contains("out") ? "out" : "in";
+}
+
+function markTails() {
+  for (const node of log.children) {
+    if (side(node) && side(node) !== side(node.nextElementSibling)) node.classList.add("tail");
+  }
 }
 
 function render(lines) {
@@ -104,6 +128,14 @@ function render(lines) {
   let tokensOut = 0;
   let first = null;
   let last = null;
+  let prevTs = 0;
+
+  const add = (node, ts) => {
+    const t = Date.parse(ts);
+    if (t - prevTs > STAMP_GAP_MS) log.append(stamp(t));
+    prevTs = t;
+    log.append(node);
+  };
 
   for (const e of lines) {
     if (e.type === "ai-title") title = e.aiTitle ?? e.title ?? title;
@@ -113,23 +145,24 @@ function render(lines) {
       first ??= e;
       last = e;
       const c = e.message.content;
-      if (typeof c === "string") log.append(userText(c, e.isMeta));
+      if (typeof c === "string") add(userText(c, e.isMeta), e.timestamp);
       else for (const b of c) {
         if (b.type === "tool_result") {
           const card = tools.get(b.tool_use_id);
           card.classList.toggle("error", !!b.is_error);
           card.querySelector(".status").textContent = b.is_error ? "error" : "done";
           card.querySelector(".body").append(toolResult(b));
-        } else if (b.type === "text") log.append(userText(b.text, e.isMeta));
+        } else if (b.type === "text") add(userText(b.text, e.isMeta), e.timestamp);
       }
     } else if (e.type === "assistant") {
       last = e;
       model = e.message.model;
       tokensOut += e.message.usage?.output_tokens ?? 0;
       for (const b of e.message.content) {
-        if (b.type === "text") log.append(markdown(b.text));
-        else if (b.type === "thinking") log.append(thinking(b.thinking)); else if (b.type === "tool_use") {
-          const d = details("tool", [
+        if (b.type === "text") add(markdown(b.text), e.timestamp);
+        else if (b.type === "thinking") add(thinking(b.thinking), e.timestamp);
+        else if (b.type === "tool_use") {
+          const d = details("bubble in tool", [
             el("span", "name", b.name),
             el("span", "arg", toolArg(b.name, b.input)),
             el("span", "status", "running"),
@@ -137,14 +170,15 @@ function render(lines) {
           d.querySelector(".body").append(section("Input", el("div", "input")));
           d.querySelector(".input").append(toolInput(b.name, b.input));
           tools.set(b.id, d);
-          log.append(d);
+          add(d, e.timestamp);
         }
       }
     } else if (e.type === "system" && e.subtype === "compact_boundary") {
-      log.append(el("div", "system", "context compacted"));
+      add(el("div", "system", "context compacted"), e.timestamp);
     }
   }
 
+  markTails();
   const span = last ? Math.round((Date.parse(last.timestamp) - Date.parse(first.timestamp)) / 60000) : 0;
   $("info").textContent = [title, first?.cwd, model, `${span} min`, `${tokensOut.toLocaleString()} out tokens`]
     .filter(Boolean).join(" · ");
