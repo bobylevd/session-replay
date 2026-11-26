@@ -13,6 +13,7 @@
   --err: #ff3b30;
   --add: #248a3d;
   --side: #f6f6f6;
+  --avatar: #f5ece6;
   --active: #0b84ff;
 }
 @media (prefers-color-scheme: dark) {
@@ -27,6 +28,7 @@
     --err: #ff453a;
     --add: #30d158;
     --side: #1c1c1e;
+    --avatar: #2c2724;
   }
 }
 * { box-sizing: border-box; }
@@ -68,9 +70,7 @@ pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
 }
 .thread-avatar {
   grid-row: span 2; width: 40px; height: 40px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: linear-gradient(180deg, #e8987a, var(--claude));
-  color: #fff; font-weight: 600;
+  background: var(--avatar) url("claude.svg") center / 72% no-repeat;
 }
 .thread-top { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
 .thread-title { font-weight: 600; font-size: 14px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -99,9 +99,7 @@ body.over #chat { outline: 2px dashed var(--out); outline-offset: -8px; }
 }
 #avatar {
   width: 44px; height: 44px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: linear-gradient(180deg, #e8987a, var(--claude));
-  color: #fff; font-size: 20px; font-weight: 600;
+  background: var(--avatar) url("claude.svg") center / 72% no-repeat;
 }
 #name { font-size: 12px; }
 #info { color: var(--muted); font-size: 11px; max-width: 100%; overflow-wrap: anywhere; }

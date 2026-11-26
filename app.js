@@ -237,7 +237,7 @@ function showSessions(sessions) {
     const item = el("li", "thread");
     const top = el("div", "thread-top");
     top.append(el("span", "thread-title", session.title), el("span", "thread-date", listDate(session.last)));
-    item.append(el("div", "thread-avatar", "C"), top, el("div", "thread-preview", session.preview));
+    item.append(el("div", "thread-avatar"), top, el("div", "thread-preview", session.preview));
     item.onclick = () => openSession(session, item);
     list.append(item);
   }
