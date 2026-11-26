@@ -85,9 +85,15 @@ function thinking(text) {
   return d;
 }
 
-function userText(text, isMeta) {
-  if (isMeta) {
-    const d = details("meta-msg", [el("span", "", "meta: " + text.split("\n")[0].slice(0, 100))]);
+function noticeLabel(text) {
+  const summary = /<summary>([\s\S]*?)<\/summary>/.exec(text);
+  if (summary) return summary[1];
+  return text.replace(/<[^>]+>/g, " ").trim().split("\n")[0].slice(0, 100);
+}
+
+function userText(text, human) {
+  if (!human) {
+    const d = details("meta-msg", [el("span", "", noticeLabel(text))]);
     d.querySelector(".body").append(el("pre", "", text));
     return d;
   }
@@ -139,14 +145,14 @@ function render(lines) {
       first ??= e;
       last = e;
       const c = e.message.content;
-      if (typeof c === "string") add(userText(c, e.isMeta), e.timestamp);
+      if (typeof c === "string") add(userText(c, e.origin?.kind === "human" && !e.isMeta), e.timestamp);
       else for (const b of c) {
         if (b.type === "tool_result") {
           const card = tools.get(b.tool_use_id);
           card.classList.toggle("error", !!b.is_error);
           card.querySelector(".status").textContent = b.is_error ? "error" : "done";
           card.querySelector(".body").append(toolResult(b));
-        } else if (b.type === "text") add(userText(b.text, e.isMeta), e.timestamp);
+        } else if (b.type === "text") add(userText(b.text, e.origin?.kind === "human" && !e.isMeta), e.timestamp);
       }
     } else if (e.type === "assistant") {
       last = e;

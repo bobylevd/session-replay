@@ -1,5 +1,5 @@
 {"type":"ai-title","aiTitle":"Sample: fix failing test"}
-{"type":"user","timestamp":"2026-01-01T10:00:00.000Z","cwd":"/home/demo/app","message":{"role":"user","content":"The `add` test fails, please fix it."}}
+{"type":"user","timestamp":"2026-01-01T10:00:00.000Z","cwd":"/home/demo/app","origin":{"kind":"human"},"message":{"role":"user","content":"The `add` test fails, please fix it."}}
 {"type":"assistant","timestamp":"2026-01-01T10:00:02.000Z","message":{"model":"claude-opus-5-5","usage":{"output_tokens":40},"content":[{"type":"thinking","thinking":"Look at the test output first."}]}}
 {"type":"assistant","timestamp":"2026-01-01T10:00:03.000Z","message":{"model":"claude-opus-5-5","usage":{"output_tokens":20},"content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"npm test","description":"Run tests"}}]}}
 {"type":"user","timestamp":"2026-01-01T10:00:06.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","is_error":true,"content":"FAIL math.test.js\n  expected 3, got -1"}]}}
@@ -7,4 +7,5 @@
 {"type":"user","timestamp":"2026-01-01T10:00:09.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t2","content":[{"type":"text","text":"1\texport const add = (a, b) => a - b;"}]}]}}
 {"type":"assistant","timestamp":"2026-01-01T10:00:11.000Z","message":{"model":"claude-opus-5-5","usage":{"output_tokens":30},"content":[{"type":"tool_use","id":"t3","name":"Edit","input":{"file_path":"/home/demo/app/math.js","old_string":"(a, b) => a - b","new_string":"(a, b) => a + b"}}]}}
 {"type":"user","timestamp":"2026-01-01T10:00:12.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t3","content":"File updated."}]}}
+{"type":"user","timestamp":"2026-01-01T10:00:13.000Z","origin":{"kind":"task-notification"},"message":{"role":"user","content":"<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n<summary>Background command \"npm run lint\" completed (exit code 0)</summary>\n</task-notification>"}}
 {"type":"assistant","timestamp":"2026-01-01T10:00:14.000Z","message":{"model":"claude-opus-5-5","usage":{"output_tokens":25},"content":[{"type":"text","text":"Fixed: `add` used **subtraction**. Changed to `a + b` in `math.js:1`."}]}}
