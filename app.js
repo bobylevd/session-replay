@@ -80,12 +80,6 @@ function toolResult(block) {
 }
 
 function thinking(text) {
-  if (!text) {
-    const dots = el("div", "bubble in typing");
-    dots.title = "Thinking (content redacted in transcript)";
-    dots.append(el("span"), el("span"), el("span"));
-    return dots;
-  }
   const d = details("bubble in thinking", [el("span", "", "Thinking")]);
   d.querySelector(".body").textContent = text;
   return d;
@@ -160,7 +154,7 @@ function render(lines) {
       tokensOut += e.message.usage?.output_tokens ?? 0;
       for (const b of e.message.content) {
         if (b.type === "text") add(markdown(b.text), e.timestamp);
-        else if (b.type === "thinking") add(thinking(b.thinking), e.timestamp);
+        else if (b.type === "thinking" && b.thinking) add(thinking(b.thinking), e.timestamp);
         else if (b.type === "tool_use") {
           const d = details("bubble in tool", [
             el("span", "name", b.name),

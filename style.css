@@ -124,8 +124,6 @@ details[open] > summary::after { transform: rotate(90deg); }
 
 .thinking > summary { color: var(--muted); font-style: italic; font-size: 14px; }
 .thinking .body { color: var(--muted); white-space: pre-wrap; font-size: 14px; }
-.typing { display: flex; gap: 4px; padding: 11px 14px; }
-.typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: 0.6; }
 
 .meta-msg { align-self: center; max-width: 90%; margin: 6px 0; color: var(--muted); font-size: 11px; }
 .meta-msg > summary { justify-content: center; }
